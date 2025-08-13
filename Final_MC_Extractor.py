@@ -29,6 +29,12 @@ class SmartMCNumberExtractorApp:
         self.mc_list = []
         self.use_bulk = tk.BooleanVar(value=False)
         
+        # Status counters
+        self.success_count = 0
+        self.partial_count = 0
+        self.manual_count = 0
+        self.failed_count = 0
+        
         # Create GUI elements
         self.create_widgets()
         
@@ -104,6 +110,44 @@ class SmartMCNumberExtractorApp:
         entry = ttk.Entry(csv_frame, textvariable=self.csv_file, width=40)
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         ttk.Button(csv_frame, text="Browse", command=self.browse_csv_file).pack(side=tk.LEFT)
+        
+        # ========== STATUS COUNTERS ==========
+        counters_frame = ttk.Frame(common_frame)
+        counters_frame.pack(fill=tk.X, pady=(10, 5))
+        
+        # Create style for counters
+        style = ttk.Style()
+        style.configure("Success.TLabel", background="#d4edda", foreground="#155724", font=("Arial", 10, "bold"))
+        style.configure("Partial.TLabel", background="#fff3cd", foreground="#856404", font=("Arial", 10, "bold"))
+        style.configure("Manual.TLabel", background="#cce5ff", foreground="#004085", font=("Arial", 10, "bold"))
+        style.configure("Failed.TLabel", background="#f8d7da", foreground="#721c24", font=("Arial", 10, "bold"))
+        
+        # Create counter variables
+        self.success_var = tk.StringVar(value="Success: 0")
+        self.partial_var = tk.StringVar(value="Partial: 0")
+        self.manual_var = tk.StringVar(value="Manual: 0")
+        self.failed_var = tk.StringVar(value="Failed: 0")
+        
+        # Success counter
+        success_label = ttk.Label(counters_frame, textvariable=self.success_var, 
+                                 style="Success.TLabel", padding=5, anchor="center")
+        success_label.pack(side=tk.LEFT, padx=(0, 2), fill=tk.X, expand=True)
+        
+        # Partial Success counter
+        partial_label = ttk.Label(counters_frame, textvariable=self.partial_var, 
+                                 style="Partial.TLabel", padding=5, anchor="center")
+        partial_label.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+        
+        # Manual Check counter
+        manual_label = ttk.Label(counters_frame, textvariable=self.manual_var, 
+                                style="Manual.TLabel", padding=5, anchor="center")
+        manual_label.pack(side=tk.LEFT, padx=2, fill=tk.X, expand=True)
+        
+        # Failed counter
+        failed_label = ttk.Label(counters_frame, textvariable=self.failed_var, 
+                                style="Failed.TLabel", padding=5, anchor="center")
+        failed_label.pack(side=tk.LEFT, padx=(2, 0), fill=tk.X, expand=True)
+        # ========== END STATUS COUNTERS ==========
         
         # Progress bar
         self.progress = ttk.Progressbar(common_frame, orient=tk.HORIZONTAL, mode='determinate')
@@ -213,6 +257,13 @@ class SmartMCNumberExtractorApp:
             return
             
         try:
+            # Reset counters
+            self.success_count = 0
+            self.partial_count = 0
+            self.manual_count = 0
+            self.failed_count = 0
+            self.update_counters()
+            
             # Get current tab from notebook
             current_tab = self.notebook.select()
             tab_text = self.notebook.tab(current_tab, "text")
@@ -333,6 +384,19 @@ class SmartMCNumberExtractorApp:
                     else:
                         status = "Manual Check"
                 
+                # Update counters based on status
+                if status == "Success":
+                    self.success_count += 1
+                elif status == "Partial Success":
+                    self.partial_count += 1
+                elif status == "Manual Check":
+                    self.manual_count += 1
+                elif status == "Failed":
+                    self.failed_count += 1
+                
+                # Update counters display
+                self.update_counters()
+                
                 # Create display-friendly address for GUI (replace newlines with commas)
                 display_address = address.replace("\n", ", ") if "\n" in address else address
                 
@@ -364,6 +428,14 @@ class SmartMCNumberExtractorApp:
             if self.driver:
                 self.driver.quit()
                 self.driver = None
+    
+    def update_counters(self):
+        """Update the counter labels with current values"""
+        self.success_var.set(f"Success: {self.success_count}")
+        self.partial_var.set(f"Partial: {self.partial_count}")
+        self.manual_var.set(f"Manual: {self.manual_count}")
+        self.failed_var.set(f"Failed: {self.failed_count}")
+        self.root.update_idletasks()
     
     def smart_process_mc_number(self, mc_number):
         try:
